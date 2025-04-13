@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -62,6 +63,12 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 
 type queryModel struct{}
 
+type RoadWeatherData struct {
+	DateTime               string `json:"datetime"`
+	RoadSurfaceTemperature string `json:"roadsurfacetemperature"`
+	AirTemperature         string `json:"airtemperature"`
+}
+
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
 
@@ -73,6 +80,53 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
+	// Load the plugin settings
+	config, err := models.LoadPluginSettings(*pCtx.DataSourceInstanceSettings)
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to load plugin settings: %v", err.Error()))
+	}
+
+	// Build the URL with config settings
+	url := config.Domain + "/resource/" + config.Resource + ".json" + "?$$app_token=" + config.Secrets.AppToken
+
+	backend.Logger.Debug("Making request to", "url", url)
+
+	// Make the request
+	resp, err := http.Get(url)
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to make request: %v", err.Error()))
+	}
+
+	// Close the response body after this function is done executing
+	defer resp.Body.Close()
+
+	// Decode the response body into a RoadWeatherData struct
+	var roadWeatherData []RoadWeatherData
+	err = json.NewDecoder(resp.Body).Decode(&roadWeatherData)
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to decode response body: %v", err.Error()))
+	}
+
+	// Create slices to store the data as columnar data
+	times := make([]time.Time, len(roadWeatherData))
+	roadSurfaceTemps := make([]float64, len(roadWeatherData))
+	airTemps := make([]float64, len(roadWeatherData))
+
+	for i, roadWeather := range roadWeatherData {
+		times[i], err = time.Parse("2006-01-02T15:04:05.000", roadWeather.DateTime)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to parse datetime: %v", err.Error()))
+		}
+		roadSurfaceTemps[i], err = strconv.ParseFloat(roadWeather.RoadSurfaceTemperature, 64)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to parse road surface temp: %v", err.Error()))
+		}
+		airTemps[i], err = strconv.ParseFloat(roadWeather.AirTemperature, 64)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("failed to parse air temp: %v", err.Error()))
+		}
+	}
+
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
@@ -80,8 +134,9 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 
 	// add fields.
 	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
+		data.NewField("time", nil, times),
+		data.NewField("road temperatures", nil, roadSurfaceTemps),
+		data.NewField("air temperatures", nil, airTemps),
 	)
 
 	// add the frames to the response.
