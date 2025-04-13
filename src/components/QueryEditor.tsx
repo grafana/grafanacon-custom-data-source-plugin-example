@@ -15,13 +15,14 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
 
   return (
     <Stack gap={0}>
-      <InlineField label="Query Text" labelWidth={16} tooltip="Not used yet">
+      <InlineField label="Query Text" labelWidth={16} tooltip="ex: stationName=SpokaneSwingBridge">
         <Input
           id="query-editor-query-text"
           onChange={onQueryTextChange}
           value={queryText || ''}
           required
           placeholder="Enter a query"
+          width={64}
         />
       </InlineField>
     </Stack>

@@ -61,7 +61,9 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 	return response, nil
 }
 
-type queryModel struct{}
+type queryModel struct {
+	QueryText string `json:"queryText"`
+}
 
 type RoadWeatherData struct {
 	DateTime               string `json:"datetime"`
@@ -80,6 +82,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
+	backend.Logger.Debug("Query text", "queryText", qm.QueryText)
 	// Load the plugin settings
 	config, err := models.LoadPluginSettings(*pCtx.DataSourceInstanceSettings)
 	if err != nil {
@@ -88,6 +91,10 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 
 	// Build the URL with config settings
 	url := config.Domain + "/resource/" + config.Resource + ".json" + "?$$app_token=" + config.Secrets.AppToken
+
+	if qm.QueryText != "" {
+		url += "&" + qm.QueryText
+	}
 
 	backend.Logger.Debug("Making request to", "url", url)
 
