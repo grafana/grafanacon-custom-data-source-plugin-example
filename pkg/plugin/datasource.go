@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -109,6 +110,31 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 		return res, nil
 	}
 
+	// Build the URL with the API key
+	url := config.Path + "?$$app_token=" + config.Secrets.ApiKey
+
+	// Log the URL for debugging purposes
+	backend.Logger.Debug("Testing connection to", "url", url)
+
+	// Make a request to the URL
+	resp, err := http.Get(url)
+
+	// Check if the request failed and return an error if it did
+	if err != nil {
+		backend.Logger.Error("Failed to make request", "error", err)
+		return nil, err
+	}
+
+	// Check if the response status is not 200 and return an error if it's not
+	if resp.StatusCode != 200 {
+		backend.Logger.Error("Request failed with status code", "status", resp.StatusCode)
+		return nil, fmt.Errorf("request failed with status code %d", resp.StatusCode)
+	}
+
+	// Close the response body
+	defer resp.Body.Close()
+
+	// If we got this far, the request was successful
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusOk,
 		Message: "Data source is working",

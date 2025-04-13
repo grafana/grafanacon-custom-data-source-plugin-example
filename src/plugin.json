@@ -5,6 +5,7 @@
   "id": "mytestorg-test-datasource",
   "metrics": true,
   "backend": true,
+  "alerting": true,
   "executable": "gpx_test",
   "info": {
     "description": "",
