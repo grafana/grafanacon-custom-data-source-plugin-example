@@ -104,14 +104,14 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 		return res, nil
 	}
 
-	if config.Secrets.ApiKey == "" {
+	if config.Secrets.AppToken == "" {
 		res.Status = backend.HealthStatusError
-		res.Message = "API key is missing"
+		res.Message = "App token is missing"
 		return res, nil
 	}
 
 	// Build the URL with the API key
-	url := config.Path + "?$$app_token=" + config.Secrets.ApiKey
+	url := config.Domain + "/resource/" + config.Resource + ".json" + "?$$app_token=" + config.Secrets.AppToken
 
 	// Log the URL for debugging purposes
 	backend.Logger.Debug("Testing connection to", "url", url)
