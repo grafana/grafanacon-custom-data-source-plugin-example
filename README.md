@@ -1,3 +1,6 @@
+# Grafanacon Custom Datasource Plugin Example
+This is an example plugin that was created for the purpose of [GrafanaCon 2025's Hands on Labs](https://grafana.com/events/grafanacon/2025/hands-on-labs/). Associated docs can be found [here](https://github.com/grafana/grafanacon-custom-data-source-plugin-example)
+
 # Grafana data source plugin template
 
 This template is a starting point for building a Data Source Plugin for Grafana.
