@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
-  pull-requests: write
 
 jobs:
   build:
@@ -45,7 +43,7 @@ jobs:
         run: npm run test:ci
       - name: Build frontend
         run: |
-          if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          if [ "$GITHUB_EVENT_NAME" == "push" ] && [ "$GITHUB_REF" == "refs/heads/main" ]; then
             npm run build -- --profile --json stats.json
           else
             npm run build
@@ -67,14 +65,14 @@ jobs:
 
       - name: Test backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v3
+        uses: magefile/mage-action@6f50bbb8ea47d56e62dee92392788acbc8192d0b
         with:
           version: latest
           args: coverage
 
       - name: Build backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v3
+        uses: magefile/mage-action@6f50bbb8ea47d56e62dee92392788acbc8192d0b
         with:
           version: latest
           args: buildAll
@@ -148,6 +146,10 @@ jobs:
 
   playwright-tests:
     needs: [resolve-versions, build]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -224,6 +226,10 @@ jobs:
     if: ${{ always() && !cancelled() }}
     needs: [playwright-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Publish report
