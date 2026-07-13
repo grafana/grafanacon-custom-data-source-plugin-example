@@ -18,7 +18,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: grafana/plugin-actions/create-plugin-update@main
+      - uses: grafana/plugin-actions/create-plugin-update@6a283a4015776c4becd1708906b59b2e78c221ae # main
         # Uncomment to use a fine-grained personal access token instead of default github token
         # (For more info on how to generate the token see https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
         # with:
