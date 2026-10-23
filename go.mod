@@ -1,8 +1,8 @@
 module github.com/my-test-org/test
 
-go 1.24.1
+go 1.26.10
 
-toolchain go1.24.2
+toolchain go1.26.10
 
 require github.com/grafana/grafana-plugin-sdk-go v0.276.0
 
